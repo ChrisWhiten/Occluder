@@ -20,18 +20,18 @@ using namespace std;
 namespace fs = boost::filesystem;
 
 string source = "C:/Projects/Experiments/Shapes1032b";
-string dest = "C:/Projects/Experiments/Shapes1032bOccluded";
+string dest = "C:/Projects/Experiments/Shapes1032bOccludedb";
 
 cv::Rect occluder;
 cv::Mat *current_img;
-bool automate = true;
+bool automate = false;
 
 // update window showing current occluding region.
 void updateVisualization()
 {
 	cv::Mat visualization = current_img->clone();
 	cv::rectangle(visualization, occluder, CV_RGB(0, 0, 0), CV_FILLED);
-	cv::imshow("Image", visualization);
+	cv::imshow("Occluded image", visualization);
 }
 
 // save image with occluded region added.
@@ -89,6 +89,7 @@ void onMouse(int event, int x, int y, int, void *)
 	static int selected_corner = tl;
 	const int CLICK_LENIANCY_THRESHOLD = 10;
 	cv::Point clicked_point(x, y);
+	static cv::Point dragging_displacement(0, 0); // representing the displacement vector with a point.
 
 	switch (event)
 	{
@@ -104,7 +105,11 @@ void onMouse(int event, int x, int y, int, void *)
 			else if (manhattanDistance(cv::Point(occluder.tl().x, occluder.tl().y + occluder.height), clicked_point) < CLICK_LENIANCY_THRESHOLD)
 				selected_corner = bl;
 			else if (occluder.contains(clicked_point))
+			{
 				selected_corner = middle;
+				dragging_displacement.x = occluder.x - x;
+				dragging_displacement.y = occluder.y - y;
+			}
 			else
 				dragging = false; // wasn't close enough to any corner, no dragging.
 			break;
@@ -131,8 +136,8 @@ void onMouse(int event, int x, int y, int, void *)
 						occluder.y = y;
 						break;
 					case middle:
-						occluder.x = x;
-						occluder.y = y;
+						occluder.x = x + dragging_displacement.x;
+						occluder.y = y + dragging_displacement.y;
 						break;
 					case tr:
 						break;
@@ -162,8 +167,8 @@ void main()
 		current_img = new cv::Mat(cv::imread(ss.str()));
 		getInitialOcclusionFigure(current_img);
 		
-		cv::namedWindow("Image");
-		cv::setMouseCallback("Image", onMouse, 0);
+		cv::namedWindow("Occluded image");
+		cv::setMouseCallback("Occluded image", onMouse, 0);
 		if (automate)
 		{
 			cv::waitKey(1);
