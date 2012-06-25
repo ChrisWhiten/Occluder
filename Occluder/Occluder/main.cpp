@@ -20,7 +20,7 @@ using namespace std;
 namespace fs = boost::filesystem;
 
 string source = "C:/Projects/Experiments/Shapes1032b";
-string dest = "C:/Projects/Experiments/Shapes1032bOccludedb";
+string dest = "C:/Projects/Experiments/Shapes1032bOccluded";
 
 cv::Rect occluder;
 cv::Mat *current_img;
@@ -95,6 +95,9 @@ void onMouse(int event, int x, int y, int, void *)
 	{
 		case CV_EVENT_LBUTTONDOWN:
 			dragging = true;
+			dragging_displacement.x = occluder.x - x;
+			dragging_displacement.y = occluder.y - y;
+
 			// select a corner to drag.
 			if (manhattanDistance(occluder.tl(), clicked_point) < CLICK_LENIANCY_THRESHOLD)
 				selected_corner = tl;
@@ -107,8 +110,6 @@ void onMouse(int event, int x, int y, int, void *)
 			else if (occluder.contains(clicked_point))
 			{
 				selected_corner = middle;
-				dragging_displacement.x = occluder.x - x;
-				dragging_displacement.y = occluder.y - y;
 			}
 			else
 				dragging = false; // wasn't close enough to any corner, no dragging.
@@ -130,8 +131,8 @@ void onMouse(int event, int x, int y, int, void *)
 				switch (selected_corner)
 				{
 					case tl:
-						occluder.height = occluder.height + (occluder.y - y);
-						occluder.width = occluder.width + (occluder.x - x);
+						occluder.height += (occluder.y - y);
+						occluder.width += (occluder.x - x);
 						occluder.x = x;
 						occluder.y = y;
 						break;
@@ -140,10 +141,18 @@ void onMouse(int event, int x, int y, int, void *)
 						occluder.y = y + dragging_displacement.y;
 						break;
 					case tr:
+						occluder.width = x - occluder.x;
+						occluder.height += (occluder.y - y);
+						occluder.y = y;
 						break;
 					case bl:
+						occluder.height += y - (occluder.y + occluder.height);
+						occluder.width += (occluder.x - x);
+						occluder.x = x;
 						break;
 					case br:
+						occluder.height += y - (occluder.y + occluder.height);
+						occluder.width += x - (occluder.x + occluder.width);
 						break;
 				}
 				updateVisualization();
